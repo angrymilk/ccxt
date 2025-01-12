@@ -13,6 +13,7 @@ from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import ArgumentsRequired
 from ccxt.base.errors import BadRequest
 from ccxt.base.precise import Precise
+import copy
 
 
 class binance(ccxt.async_support.binance):
@@ -2593,9 +2594,14 @@ class binance(ccxt.async_support.binance):
         self.set_balance_cache(client, type, isPortfolioMargin)
         self.set_positions_cache(client, type, None, isPortfolioMargin)
         message = None
+        if len(self.my_trades_patch) > 0:
+            data = copy.deepcopy(self.my_trades_patch)
+            self.my_trades_patch = []
+            return data
         trades = await self.watch(url, messageHash, message, type)
         if self.newUpdates:
             limit = trades.getLimit(symbol, limit)
+        self.my_trades_patch = []
         return self.filter_by_symbol_since_limit(trades, symbol, since, limit, True)
 
     def handle_my_trade(self, client: Client, message):
@@ -2648,6 +2654,7 @@ class binance(ccxt.async_support.binance):
                 limit = self.safe_integer(self.options, 'tradesLimit', 1000)
                 self.myTrades = ArrayCacheBySymbolById(limit)
             myTrades = self.myTrades
+            self.my_trades_patch.append(trade)
             myTrades.append(trade)
             client.resolve(self.myTrades, messageHash)
             messageHashSymbol = messageHash + ':' + symbol

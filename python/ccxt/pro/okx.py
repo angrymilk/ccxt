@@ -13,6 +13,7 @@ from ccxt.base.errors import ArgumentsRequired
 from ccxt.base.errors import BadRequest
 from ccxt.base.errors import InvalidNonce
 from ccxt.base.errors import AuthenticationError
+import copy
 
 
 class okx(ccxt.async_support.okx):
@@ -838,9 +839,14 @@ class okx(ccxt.async_support.okx):
         request = {
             'instType': uppercaseType,
         }
+        if len(self.my_trades_patch) > 0:
+            data = copy.deepcopy(self.my_trades_patch)
+            self.my_trades_patch = []
+            return data
         orders = await self.subscribe('private', messageHash, channel, None, self.extend(request, params))
         if self.newUpdates:
             limit = orders.getLimit(symbol, limit)
+        self.my_trades_patch = []
         return self.filter_by_symbol_since_limit(orders, symbol, since, limit, True)
 
     async def watch_positions(self, symbols: Strings = None, since: Int = None, limit: Int = None, params={}) -> List[Position]:
@@ -1166,6 +1172,7 @@ class okx(ccxt.async_support.okx):
             rawTrade = filteredOrders[i]
             trade = self.order_to_trade(rawTrade)
             myTrades.append(trade)
+            self.my_trades_patch.append(trade)
             symbol = trade['symbol']
             symbols[symbol] = True
         messageHash = channel + '::myTrades'

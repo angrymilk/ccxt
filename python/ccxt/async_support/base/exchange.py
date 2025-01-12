@@ -78,6 +78,7 @@ class Exchange(BaseExchange):
         self.init_rest_rate_limiter()
         self.markets_loading = None
         self.reloading_markets = False
+        self.my_trades_patch = []
 
     def init_rest_rate_limiter(self):
         self.throttle = Throttler(self.tokenBucket, self.asyncio_loop)

@@ -14,6 +14,7 @@ from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import ArgumentsRequired
 from ccxt.base.errors import BadRequest
 from ccxt.base.errors import AuthenticationError
+import copy
 
 
 class bybit(ccxt.async_support.bybit):
@@ -767,9 +768,14 @@ class bybit(ccxt.async_support.bybit):
             'usdc': 'user.openapi.perp.trade',
         }
         topic = self.safe_value(topicByMarket, self.get_private_type(url))
+        if len(self.my_trades_patch) > 0:
+            data = copy.deepcopy(self.my_trades_patch)
+            self.my_trades_patch = []
+            return data
         trades = await self.watch_topics(url, [messageHash], [topic], params)
         if self.newUpdates:
             limit = trades.getLimit(symbol, limit)
+        self.my_trades_patch = []
         return self.filter_by_symbol_since_limit(trades, symbol, since, limit, True)
 
     def handle_my_trades(self, client: Client, message):
@@ -854,6 +860,7 @@ class bybit(ccxt.async_support.bybit):
                 parsed = self.parse_trade(rawTrade)
             symbol = parsed['symbol']
             symbols[symbol] = True
+            self.my_trades_patch.append(parsed)
             trades.append(parsed)
         keys = list(symbols.keys())
         for i in range(0, len(keys)):
