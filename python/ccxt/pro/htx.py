@@ -1986,6 +1986,7 @@ class htx(ccxt.async_support.htx):
                 market = self.market(marketId)
                 for i in range(0, len(rawTrades)):
                     trade = rawTrades[i]
+                    trade['client_order_id'] = self.safe_value(message, 'client_order_id', "")
                     parsedTrade = self.parse_trade(trade, market)
                     # add extra params(side, type, ...) coming from the order
                     parsedTrade = self.extend(parsedTrade, extendParams)
