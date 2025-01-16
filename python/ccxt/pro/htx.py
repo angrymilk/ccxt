@@ -16,6 +16,7 @@ from ccxt.base.errors import BadSymbol
 from ccxt.base.errors import NetworkError
 from ccxt.base.errors import InvalidNonce
 from ccxt.base.errors import AuthenticationError
+import copy
 
 
 class htx(ccxt.async_support.htx):
@@ -678,9 +679,14 @@ class htx(ccxt.async_support.htx):
             # we will take advantage of the order messageHash because already handles stuff
             # like symbol/margin/subtype/type variations
             messageHash = orderMessageHash + ':' + 'trade'
+        if len(self.my_trades_patch) > 0:
+            data = copy.deepcopy(self.my_trades_patch)
+            self.my_trades_patch = []
+            return data
         trades = await self.subscribe_private(channel, messageHash, type, subType, params)
         if self.newUpdates:
             limit = trades.getLimit(symbol, limit)
+        self.my_trades_patch = []
         return self.filter_by_symbol_since_limit(trades, symbol, since, limit, True)
 
     def get_order_channel_and_message_hash(self, type, subType, market=None, params={}):
@@ -1977,6 +1983,7 @@ class htx(ccxt.async_support.htx):
                 symbol = self.safe_string(parsed, 'symbol')
                 if symbol is not None:
                     cachedTrades.append(parsed)
+                    self.my_trades_patch.append(parsed)
                     client.resolve(self.myTrades, messageHash)
             else:
                 # self trades object is artificially created
@@ -1990,6 +1997,7 @@ class htx(ccxt.async_support.htx):
                     parsedTrade = self.parse_trade(trade, market)
                     # add extra params(side, type, ...) coming from the order
                     parsedTrade = self.extend(parsedTrade, extendParams)
+                    self.my_trades_patch.append(parsedTrade)
                     cachedTrades.append(parsedTrade)
                 # messageHash here is the orders one, so
                 # we have to recreate the trades messageHash = orderMessageHash + ':' + 'trade'
