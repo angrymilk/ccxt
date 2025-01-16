@@ -904,6 +904,7 @@ class htx(ccxt.async_support.htx):
         else:
             # contract branch
             parsedOrder = self.parse_ws_order(message, market)
+            clientOrderId = self.safe_value(message, 'client_order_id', '')
             rawTrades = self.safe_value(message, 'trade', [])
             tradesLength = len(rawTrades)
             if tradesLength > 0:
@@ -911,6 +912,7 @@ class htx(ccxt.async_support.htx):
                     'trades': rawTrades,
                     'ch': messageHash,
                     'symbol': marketId,
+                    'client_order_id' : clientOrderId
                 }
                 # inject order params in every trade
                 extendTradeParams = {
